@@ -20,4 +20,5 @@ public class ThreadTest01 {
             System.out.println("main 主" + i);
         }
     }
+
 }
