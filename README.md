@@ -123,7 +123,9 @@ public class MyCallable implements Callable<Integer> {
 |继承 Thread 类    |编程比较简单，可以直接使用 Thread 类中的方法|可以扩展性较差，不能再继承其他的类|method01|
 |实现 Runnable 接口|扩展性强，实现该接口的同时还可以继承其他的类|编程相对复杂，不能直接使用 Thread 类中的方法|method02|
 |实现 Callable 接口|扩展性强，实现该接口的同时还可以继承其他的类|编程相对复杂，不能直接使用 Thread 类中的方法|method03|
+
 #常见的成员方法
+
 |         方法名称                  |       说明      |对应包名|
 |           ---                   |      ---        | --- |
 |String getName()                 |返回此线程的名称   |methodTest|
