@@ -528,3 +528,81 @@ public class ThreadDemo {
   }
 }
 ```
+
+## 等待唤醒机制（阻塞队列方式实现）
+**什么是阻塞队列**
+* 阻塞队列（BlockingQueue）是一个支持两个附加操作的队列，这两个附加的操作支持阻塞的插入和移除方法。
+* 支持阻塞的插入方法：当队列满时，队列会阻塞插入元素的线程，直到队列不满。
+* 支持阻塞的移除方法：当队列为空时，获取元素的线程会等待队列变为非空。
+* 阻塞队列常用于生产者和消费者场景，生产者是向队列里添加元素的线程，消费者是从队列里获取元素的线程。阻塞队列就是生产者用来存放元素、消费者用来获取元素的容器。
+### 阻塞队列的继承结构
+![img.png](image/阻塞队列.png)
+```java
+// 消费者
+public class Cookie extends Thread{
+
+  ArrayBlockingQueue<String> queue;
+
+  public Cookie(ArrayBlockingQueue<String> queue){
+    this.queue = queue;
+  }
+  @Override
+  public void run() {
+    while (true){
+      // 不断把面条放到阻塞队列当中
+      try {
+        queue.put("面条");
+        System.out.println("厨师放了一碗面条");
+      }catch (InterruptedException e){
+        e.printStackTrace();
+      }
+    }
+  }
+}
+
+
+// 生产者
+public class Foodie extends Thread{
+
+  ArrayBlockingQueue<String> queue;
+
+  public Foodie(ArrayBlockingQueue<String> queue){
+    this.queue = queue;
+  }
+
+  @Override
+  public void run() {
+    while (true){
+      // 不断把面条放到阻塞队列当中
+      try {
+        String food = queue.take();
+        System.out.println(food);
+      }catch (InterruptedException e){
+        e.printStackTrace();
+      }
+    }
+  }
+}
+
+
+// 主函数
+public class ThreadDemo {
+  public static void main(String[] args) {
+        /*
+        需求： 利用阻塞队列完成生产者和消费者（等待唤醒机制）的代码
+            细节：生产者和消费者必须使用同一个阻塞队列
+         */
+
+    // 1. 创建阻塞队列的对象
+    ArrayBlockingQueue<String> queue = new ArrayBlockingQueue<>(1);
+
+    // 2. 创建线程的对象，并把阻塞队列传递过去
+    Cookie c = new Cookie(queue);
+    Foodie f = new Foodie(queue);
+
+    // 3. 开启线程
+    c.start();
+    f.start();
+  }
+}
+```
