@@ -277,5 +277,254 @@ public class MyRunnable implements Runnable{
         return false;
     }
 }
+```
 
+
+# Lock锁
+        代码包test03
+  虽然我们可以理解同步代码块和同步方法的锁对象问题但是我们并没有直接看到在哪里加上了锁，在哪里释放了锁提供了一个新的锁对象Lock为了更清晰的表达如何加锁和释放锁，
+JDK5以后提供了一个新的锁对象Lock。
+
+  Lock实现提供比使用方法和语句可以获得更广泛的锁定操作synchronized方法和语句可以获得更广泛的锁定操作。
+  Lock中提供了获得锁和释放锁的方法
+  void lock(): 获得锁
+  void unlock():释放锁
+
+  Lock是接口不能直接实例化，这里采用它的实现类ReentrantLock来实例化
+  ReentrantLock的构造方法
+  ReentrantLock():创建一个ReentrantLock的实例
+```java
+public class ThreadDemo {
+    public static void main(String[] args) {
+        /*
+        某电影院目前正在上映国产大片，共有180张票，而它有3个窗口卖票，请设计一个程序模拟该电影院卖票
+        使用JDK的lock实现
+         */
+        MyThread t1 = new MyThread();
+        MyThread t2 = new MyThread();
+        MyThread t3 = new MyThread();
+
+        t1.setName("窗口1");
+        t2.setName("窗口2");
+        t3.setName("窗口3");
+
+        t1.start();
+        t2.start();
+        t3.start();
+    }
+}
+
+public class MyThread extends Thread {
+
+  static int ticket = 0;
+  // 创建锁对象
+  static Lock lock = new ReentrantLock();
+
+  @Override
+  public void run() {
+    while (true) {
+      // 加锁 轮流执行(同步代码块)
+      // MyThread.class类的字节码文件表示唯一
+//            synchronized (MyThread.class){
+      lock.lock();// 加锁
+      try {
+        if (ticket == 100) {
+          break;
+        } else {
+          Thread.sleep(10);
+          ticket++;
+          System.out.println(getName() + "正在卖第" + ticket + "张票");
+        }
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      } finally {
+        lock.unlock();
+      }
+    }
+  }
+}
+```
+
+# 死锁
+    死锁 是指两个或两个以上的进程在执行过程中，由于竞争资源或者由于彼此通信而造成的一种阻塞的现象，若无外力作用，它们都将无法推进下去。也就是两个线程拥有锁的情况下，又在尝试获取对方的锁，从而造成程序一直阻塞的情况。
+    代码包test04
+```java
+public class ThreadDemo {
+    public static void main(String[] args) {
+        /*
+        需求：
+            死锁
+         */
+        MyThread t1 = new MyThread();
+        MyThread t2 = new MyThread();
+
+        t1.setName("线程A");
+        t2.setName("线程B");
+
+        t1.start();
+        t2.start();
+    }
+}
+
+
+public class MyThread extends Thread {
+
+  static Object objA = new Object();
+  static Object objB = new Object();
+
+  @Override
+  public void run() {
+    // 1. 循环
+    while (true) {
+      if ("线程A".equals(getName())) {
+        synchronized (objA) {
+          System.out.println("线程A拿到了A锁，准备拿B锁");
+          synchronized (objB) {
+            System.out.println("线程A拿到了B锁，顺利执行完一轮");
+          }
+        }
+      } else if ("线程B".equals(getName())) {
+        if ("线程B".equals(getName())) {
+          synchronized (objB) {
+            System.out.println("线程B拿到了B锁，准备拿A锁");
+            synchronized (objA) {
+              System.out.println("线程B拿到了A锁，顺利执行完一轮");
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+# 生产者和消费者（等待唤醒机制）
+    生产者等待/消费者等待
+    生产者消费者模式是一个十分经典的多线程协作的模式
+## 生产者和消费者（常见方法）
+    代码包:test05
+|   方法名称  |   说明 |
+|   ---      |   --- |
+| void wait() | 当前线程等待,直到被其他线程唤醒|
+| void notify()| 随机唤醒单个线程|
+| void notifyAll()| 唤醒所有线程|
+```java
+// 消费者
+public class Consumer extends Thread {
+
+  @Override
+  public void run() {
+        /*
+        1. 循环
+        2. 同步代码块
+        3. 判断共享数据是否到了末尾（到了末尾）
+        4. 判断共享数据是否到了末尾（没有到末尾，执行核心逻辑）
+         */
+    while (true) {
+      synchronized (Controller.lock) {
+        if (Controller.count == 0) {
+          break;
+        } else {
+          // 先判断桌子上是否有面条
+          if (Controller.foodFlag == 0) {
+            // 如果没有，就等待
+            try {
+              Controller.lock.wait();// 让当前线程跟锁进行绑定
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+          } else {
+            // 把吃的总数 - 1
+            Controller.count--;
+            // 如果有，就开吃
+            System.out.println("正在消费，还能消费" + Controller.count);
+            // 吃完之后，唤醒厨师继续做
+            Controller.lock.notifyAll();
+            // 修改状态
+            Controller.foodFlag = 0;
+          }
+        }
+      }
+    }
+  }
+}
+
+// 生产者
+public class Producer extends Thread{
+
+  @Override
+  public void run() {
+        /*
+        1. 循环
+        2. 同步代码块
+        3. 判断共享数据是否到了末尾（到了末尾）
+        4. 判断共享数据是否到了末尾（没有到末尾，执行核心逻辑）
+         */
+    while (true){
+      synchronized (Controller.lock){
+        if (Controller.count == 0){
+          break;
+        }else {
+          // 判断桌子上是否有食物
+          if (Controller.foodFlag == 1){
+            // 如果有，就等待
+            try {
+              Controller.lock.wait();
+            } catch (InterruptedException e) {
+              e.printStackTrace();
+            }
+          }else {
+            // 如果没有，就制作食物
+            System.out.println("开始制作食物");
+            // 修改桌子尚的食物状态
+            Controller.foodFlag = 1;
+            // 侥幸等待的消费者开吃
+            Controller.lock.notifyAll();
+          }
+        }
+      }
+    }
+  }
+}
+
+// 控制线程
+public class Controller {
+    /*
+    作用：
+        控制生产者和消费者执行
+     */
+
+  // 判断是否有面条  0：没有面条  1：有面条
+  public static int foodFlag = 0;
+
+  // 总个数
+  public static int count = 10;
+
+  // 锁对象
+  public static Object lock = new Object();
+
+}
+
+// main函数
+public class ThreadDemo {
+  public static void main(String[] args) {
+
+        /*
+        需求： 完成生产者和消费者（等待唤醒机制）的代码
+              实现线程轮流交替执行的效果
+         */
+
+    // 创建线程对象
+    Consumer c = new Consumer();
+    Producer p = new Producer();
+
+    // 给线程设置名字
+    p.setName("生产者");
+    c.setName("消费者");
+
+    // 开启线程
+    c.start();
+    p.start();
+  }
+}
 ```
