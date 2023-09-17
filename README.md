@@ -606,3 +606,357 @@ public class ThreadDemo {
   }
 }
 ```
+# 线程状态
+![img.png](image/线程的状态.png)
+
+新建状态（NEW）  --------->  创建线程对象
+就绪状态（RUNABLE）--------->  start方法
+阻塞状态（BLOCKED）--------->  无法获得锁对象
+等待状态（WAITING）--------->  wait方法
+计时等待（TIMED_WAITING）---------> sleep方法
+结束状态（TERMINATED）--------->  全部代码运行完毕
+
+# 多线程练习
+## 题一：
+共有1000张电影票,可以在两个窗口领取,假设每次领取的时间为3000毫秒要求:请用多线程模拟卖票过程并打印剩余电影票的数量
+
+
+## 题二：
+有100份礼品,两人同时发送，当剩下的礼品小于10份的时候则不再送出利用多线程模拟该过程并将线程的名字和礼物的剩余数量打印出来.
+
+
+## 题三：
+同时开启两个线程，共同获取1-100之间的所有数字要求:将输出所有的奇数。
+
+
+## 题四：
+抢红包也用到了多线程
+假设:100块，分成了3个包，现在有5个人去抢。
+其中，红包是共享数据。
+5个人是5条线程。
+打印结果如下
+XXX抢到了XXX元
+XXX抢到了XXX元
+XXX抢到了XXX元
+XXX没抢到
+XXX没抢到
+```java
+public class MyThread extends Thread {
+    // 共享数据
+    // 100块，分成三个包
+    static BigDecimal money = new BigDecimal(100);
+    static int count = 3;
+
+    // 最小中奖金额
+    static final BigDecimal MIN = BigDecimal.valueOf(0.01);
+
+    @Override
+    public void run() {
+        synchronized (MyThread.class) {
+            if (count == 0) {
+                // 判断共享数据已经到末尾
+                System.out.println(getName() + "未抢到红包");
+            } else {
+                // 判断共享数据没有到末尾
+                // 定义一个变量，表示中奖的金额
+                BigDecimal prize;
+                if (count == 1) {
+                    // 表示此时是最后一个红包
+                    // 就无需随机，剩余所有的钱就是中奖金额
+                    prize = money;
+                } else {
+                    // 获取抽奖范围
+                    double bounds = money.subtract(BigDecimal.valueOf(count - 1).multiply(MIN)).doubleValue();
+                    Random r = new Random();
+                    // 抽奖金额
+                    prize = BigDecimal.valueOf(ThreadLocalRandom.current().nextDouble(0, bounds));
+                }
+                // 设置抽中红包，小数点保留两位，四舍五入
+                prize = prize.setScale(2, RoundingMode.HALF_UP);
+                // 在总金额中去掉对应的钱
+                money = money.subtract(prize);
+                // 红包个数减少
+                count--;
+                // 输出红包信息
+                System.out.println(getName() + "抽中了" + prize + "元");
+            }
+        }
+    }
+}
+```
+
+## 题五：
+有一个抽奖池,该抽奖池中存放了奖励的金额,该抽奖池中的奖项为(10,5,20,50,100,200,500,800,2,80,300,700);创建两个抽奖箱(线程)设置线程名称分别为“抽奖箱1”“抽奖箱2”随机从抽奖池中获取奖项元素并打印在控制台上,格式如下
+每次抽出一个奖项就打印一个(随机)
+抽奖箱1又产生了一个 10 元大奖
+抽奖箱1又产生了一个 100 元大奖
+抽奖箱1 又产生了一个 200 元大奖
+抽奖箱1 又产生了一个 800 元大奖
+抽奖箱2又产生了一个700 元大奖
+```java
+public class Test {
+    public static void main(String[] args) {
+    /*
+    有一个抽奖池,该抽奖池中存放了奖励的金额,该抽奖池中的奖项为(10,5,20,50,100,200,500,800,2,80,300,7001;创建两个抽奖箱(线程)设置线程名称分别为“抽奖箱1”“抽奖箱2”随机从抽奖池中获取奖项元素并打印在控制台上,格式如下
+    每次抽出一个奖项就打印一个(随机)
+    抽奖箱1又产生了一个 10 元大奖
+    抽奖箱1又产生了一个 100 元大奖
+    抽奖箱1 又产生了一个 200 元大奖
+    抽奖箱1 又产生了一个 800 元大奖
+    抽奖箱2又产生了一个700 元大奖
+     */
+        // 创建奖池
+        ArrayList<Integer> list = new ArrayList<>();
+        Collections.addAll(list,10,5,20,50,100,200,500,800,2,80,300,700);
+
+        MyThread t1 = new MyThread(list);
+        MyThread t2 = new MyThread(list);
+
+        t1.setName("抽奖箱1");
+        t2.setName("抽奖箱2");
+        t1.start();
+        t2.start();
+    }
+}
+
+
+public class MyThread extends Thread {
+
+  ArrayList<Integer> list;
+
+  public MyThread(ArrayList<Integer> list) {
+    this.list = list;
+  }
+
+  @Override
+  public void run() {
+    while (true) {
+      synchronized (MyThread.class) {
+        if (list.size() == 0) {
+          break;
+        } else {
+          // 继续抽奖
+          // 打乱集合顺序
+          Collections.shuffle(list);
+          Integer prize = list.remove(0);
+          System.out.println(getName() + "又产生一个" + prize + "元大奖");
+//                    Integer integer = list.get(0);
+//                    list.remove(0);
+        }
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+}
+```
+
+## 题六：
+在上一题基础上继续完成如下需求:
+每次抽的过程中，不打印，抽完时一次性打印(随机)在此次抽奖过程中，抽奖箱1总共产生了6个奖项
+分别为:10,20,100,500,2,300最高奖项为300元，总计额为932元在此次抽奖过程中，抽奖箱2总共产生了6个奖项
+分别为:5,50,200,800,80,700最高奖项为800元，总计额为1835元
+````java
+public class Test {
+    public static void main(String[] args) {
+          /*
+    在上一题基础上继续完成如下需求:
+    每次抽的过程中，不打印，抽完时一次性打印(随机)在此次抽奖过程中，抽奖箱1总共产生了6个奖项
+    分别为:10,20,100,500,2,300最高奖项为300元，总计额为932元在此次抽奖过程中，抽奖箱2总共产生了6个奖项
+    分别为:5,50,200,800,80,700最高奖项为800元，总计额为1835元
+     */
+        // 创建奖池
+        ArrayList<Integer> list = new ArrayList<>();
+        Collections.addAll(list,10,5,20,50,100,200,500,800,2,80,300,700);
+
+        MyThread t1 = new MyThread(list);
+        MyThread t2 = new MyThread(list);
+
+        t1.setName("抽奖箱1");
+        t2.setName("抽奖箱2");
+        t1.start();
+        t2.start();
+    }
+}
+
+public class MyThread extends Thread{
+  ArrayList<Integer> list;
+
+  public MyThread(ArrayList<Integer> list) {
+    this.list = list;
+  }
+  @Override
+  public void run() {
+    ArrayList<Integer> boxList = new ArrayList<>();
+    while (true) {
+      synchronized (com.test.thread.TestCase5.MyThread.class) {
+        if (list.size() == 0) {
+          System.out.println(getName() + boxList);
+          break;
+        } else {
+          // 继续抽奖
+          // 打乱集合顺序
+          Collections.shuffle(list);
+          Integer prize = list.remove(0);
+          boxList.add(prize);
+        }
+        try {
+          Thread.sleep(10);
+        } catch (InterruptedException e) {
+          e.printStackTrace();
+        }
+      }
+    }
+  }
+}
+
+````
+
+## 题七：
+在上一题基础上继续完成如下需求:在此次抽奖过程中，抽奖箱1总共产生了6个奖项，分别为: 10,20,100,500,2,300
+最高奖项为300元，总计额为932元在此次抽奖过程中，抽奖箱2总共产生了5个奖项，分别为:5,50,200,800,80,700
+最高奖项为800元，总计额为1835元在此次抽奖过程中,抽奖箱2中产生了最大奖项,该奖项金额为800元
+以上打印效果只是数据模拟,实际代码运行的效果会有差异
+```java
+public class Test {
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        /*
+        在上一题基础上继续完成如下需求:在此次抽奖过程中，抽奖箱1总共产生了6个奖项，分别为: 10,20,100,500,2,300
+        最高奖项为300元，总计额为932元在此次抽奖过程中，抽奖箱2总共产生了5个奖项，分别为:5,50,200,800,80,700
+        最高奖项为800元，总计额为1835元在此次抽奖过程中,抽奖箱2中产生了最大奖项,该奖项金额为800元
+
+        核心逻辑：获取线程抽奖的最大值（看成是线程运行的结果）
+        以上打印效果只是数据模拟,实际代码运行的效果会有差异
+         */
+
+        // 创建奖池
+        ArrayList<Integer> list = new ArrayList<>();
+        Collections.addAll(list,10,5,20,50,100,200,500,800,2,80,300,700);
+
+        // 创建多线程的要运行的参数对象
+        MyCallable mc = new MyCallable(list);
+
+        // 创建多线程运行结果的管理者对象
+        FutureTask<Integer> ft1 = new FutureTask<>(mc);
+        FutureTask<Integer> ft2 = new FutureTask<>(mc);
+
+        // 创建线程对象
+        Thread t1 = new Thread(ft1);
+        Thread t2 = new Thread(ft2);
+        t1.setName("抽奖箱1");
+        t2.setName("抽奖箱2");
+        t1.start();
+        t2.start();
+        Integer max1 = ft1.get();
+        Integer max2 = ft2.get();
+        System.out.println(max1);
+        System.out.println(max2);
+
+    }
+}
+
+public class MyCallable implements Callable<Integer> {
+  ArrayList<Integer> list;
+
+  public MyCallable(ArrayList<Integer> list) {
+    this.list = list;
+  }
+
+  @Override
+  public Integer call() throws Exception {
+    ArrayList<Integer> boxList = new ArrayList<>();
+    while (true) {
+      synchronized (com.test.thread.TestCase5.MyThread.class) {
+        if (list.size() == 0) {
+          System.out.println(Thread.currentThread().getName() + boxList);
+          break;
+        } else {
+          // 继续抽奖
+          // 打乱集合顺序
+          Collections.shuffle(list);
+          Integer prize = list.remove(0);
+          boxList.add(prize);
+        }
+      }
+      Thread.sleep(10);
+    }
+    // 把集合的最大值返回
+    if (boxList.size() == 0) {
+      return null;
+    } else {
+      return Collections.max(boxList);
+    }
+  }
+}
+```
+
+# 线程池
+<b>线程池主要核心逻辑</b>
+* 创建一个池子，池子中是空的
+* 提交任务时，池子回创建新的线程对象，任务执行完毕，线程归还给池子
+  下回再提交任务时，不需要创建新的线程，直接复用已有的线程即可。
+* 但是如果提交任务时，池子中没有空闲线程，也无法创建新的线程，任务就会排队等待 
+
+<b>线程池代码实现</b>
+* 创建线程池
+* 提交任务
+* 所有的任务全部执行完毕，关闭线程池
+
+Executors: 线程池的工具类通过调用方法返回不同类型的线程池对象。
+
+|方法名称| 说明|
+| --- | --- |
+|public static ExecutorService newCachedThreadPool|创建一个没有上线的线程池|
+|public static ExecutorService newFixedThreadPool(int nThreads)|创建有上限的线程池|
+```java
+public class MyThreadPoolDemo {
+    public static void main(String[] args) throws InterruptedException {
+        /*
+        public static ExecutorService newCachedThreadPool|创建一个没有上线的线程池|
+        public static ExecutorService newFixedThreadPool(int nThreads)|创建有上限的线程池|
+         */
+
+        // 1.获取线程池对象
+        ExecutorService pool1 = Executors.newCachedThreadPool();
+
+        // 2.提交任务
+        pool1.submit(new MyRunnable());
+        Thread.sleep(1000);
+        pool1.submit(new MyRunnable());
+        Thread.sleep(1000);
+        pool1.submit(new MyRunnable());
+        Thread.sleep(1000);
+        pool1.submit(new MyRunnable());
+        Thread.sleep(1000);
+        pool1.submit(new MyRunnable());
+        Thread.sleep(1000);
+        // 3.销毁线程池
+        pool1.shutdown();
+
+        System.out.println("---xxx---");
+        ExecutorService pool2 = Executors.newFixedThreadPool(3);
+
+        // 2.提交任务
+        pool2.submit(new MyRunnable());
+        pool2.submit(new MyRunnable());
+        pool2.submit(new MyRunnable());
+        pool2.submit(new MyRunnable());
+        pool2.submit(new MyRunnable());
+        // 3.销毁线程池
+        pool2.shutdown();
+    }
+}
+
+public class MyRunnable implements Runnable{
+  @Override
+  public void run() {
+    for (int i = 0; i < 100; i++){
+      System.out.println(Thread.currentThread().getName()+"---"+i);
+//            System.out.println(Thread.currentThread().getName()+"---"+"i");
+    }
+  }
+}
+```
