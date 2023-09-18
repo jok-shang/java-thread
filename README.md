@@ -960,3 +960,46 @@ public class MyRunnable implements Runnable{
   }
 }
 ```
+# 自定义线程池
+    核心元素：
+    *核心线程数量
+    *线程池中最大线程的数量
+    *空闲时间(值)
+    *空闲时间(单位)
+    *阻塞队列
+    *创建线程的方式
+    *要执行的任务过多时的解决方案
+## 自定义线程池（任务拒绝策略）
+|任务拒绝策略|说明|
+| --- | --- |
+|ThreadPoolExecutor.AbortPolicy|默认策略：丢弃任务并抛出RejectedExcutionException异常|
+|ThreadPoolExecutor.DiscardPolicy|丢弃任务，但是不抛出异常这是不推荐的做法|
+|ThreadPoolExecutor.DiscardOldestPolicy|抛弃队列中等待最久的任务然后八当前任务加入队列中|
+|ThreadPoolExecutor.CallerRunsPolicy|调用任务的run()方法绕过线程池直接执行|
+```java
+public class MyThreadPoolDemo1 {
+    public static void main(String[] args) {
+        /*
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(核心线程数量,最大线程数量,空闲线程最大存活时间,任务队列,创建线程工厂,任务的拒绝策略);
+        参数一:核心线程数量          不能小于0
+        参数二:最大线程数            不能小于等于0，最大数量 >= 核心线程数量
+        参数三:空闲线程最大存活时间    不能小于0
+        参数四:时间单位              用TimeUnit指定
+        参数五: 任务队列             不能为null
+        参数六:创建线程工厂           不能为null
+        参数七:任务的拒绝策略          不能为null
+         */
+        ThreadPoolExecutor pool = new ThreadPoolExecutor(
+                3,// 核心线程数量，不能小于0
+                6,//最大线程数量，不能小于0，最大数量 >= 核心线程数量
+                60,// 空闲线程最大存活时间
+                TimeUnit.SECONDS,// 时间单位
+                new ArrayBlockingQueue<>(3),// 任务队列
+                Executors.defaultThreadFactory(),// 创建线程工厂
+                new ThreadPoolExecutor.AbortPolicy()//任务的拒接策略
+        );
+//        pool.submit()
+    }
+}
+
+```
